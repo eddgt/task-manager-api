@@ -6,10 +6,12 @@ const app = express();
 app.use(express.json());
 const PORT = process.env.PORT || 3000;
 
+const allowedOrigins = ["http://localhost:4200", "http://24.199.96.42"]; // Agrega tus orígenes permitidos aquí
+
 // Configura la política CORS
 app.use(
   cors({
-    origin: "http://localhost:4200", // Cambia esto a tu origen de Angular
+    origin: allowedOrigins,
     optionsSuccessStatus: 200, // Algunos navegadores pueden requerir esto
   })
 );
