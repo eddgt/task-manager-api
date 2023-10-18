@@ -1,14 +1,9 @@
 import { Request, Response } from "express";
-import { db } from "../config/firebaseConfig";
-import { TaskRequest } from "../interfaces/TaskRequest";
+import * as TaskService from "../services/task.service";
 
 export const getTasks = async (req: Request, res: Response) => {
   try {
-    const snapshot = await db.collection("tasks").get();
-    const tasks = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
+    const tasks = await TaskService.getTasks();
     res.json(tasks);
   } catch (error) {
     console.error("Error al obtener las tareas:", error);
@@ -18,58 +13,35 @@ export const getTasks = async (req: Request, res: Response) => {
 
 export const getTask = async (req: Request, res: Response) => {
   const { taskId } = req.params;
-  const doc = await db.collection("tasks").doc(taskId).get();
+  const task = await TaskService.getTask(taskId);
 
-  if (!doc.exists) {
+  if (!task) {
     return res.status(404).json({ error: "Tarea no encontrada." });
   }
 
-  const taskData = doc.data();
-  res.json({ id: doc.id, ...taskData });
+  res.json(task);
 };
 
 export const createTask = async (req: Request, res: Response) => {
-  const body: TaskRequest = req.body;
-
-  if (!body.title || !body.description) {
-    return res
-      .status(400)
-      .json({ error: "El título y la descripción son obligatorios." });
-  }
-
-  const docRef = await db.collection("tasks").add({
-    title: body.title,
-    description: body.description,
-    completed: body.completed || false,
-  });
-
-  res.json({ id: docRef.id });
+  const taskData = req.body;
+  const createdTask = await TaskService.createTask(taskData);
+  res.json(createdTask);
 };
 
 export const updateTask = async (req: Request, res: Response) => {
   const { taskId } = req.params;
-  const body: TaskRequest = req.body;
-
-  const taskRef = db.collection("tasks").doc(taskId);
-
-  await taskRef.update({
-    title: body.title,
-    description: body.description,
-    completed: body.completed || false,
-  });
-
-  res.json({ message: "Tarea actualizada con éxito." });
+  const taskData = req.body;
+  const updatedTask = await TaskService.updateTask(taskId, taskData);
+  res.json(updatedTask);
 };
 
 export const deleteTask = async (req: Request, res: Response) => {
   const { taskId } = req.params;
-  const taskRef = db.collection("tasks").doc(taskId);
-  const doc = await taskRef.get();
+  const success = await TaskService.deleteTask(taskId);
 
-  if (!doc.exists) {
+  if (!success) {
     return res.status(404).json({ error: "Tarea no encontrada." });
   }
 
-  await taskRef.delete();
   res.json({ message: "Tarea eliminada con éxito." });
 };
